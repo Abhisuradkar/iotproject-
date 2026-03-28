@@ -5,7 +5,6 @@ export default function Login({ setToken }) {
 
   // ✅ ADD THIS (your live backend)
 // const API = import.meta.env.VITE_API_URL;
-const API = "https://iotproject-pauj.onrender.com";
 
   const [form, setForm] = useState({
     name: "",

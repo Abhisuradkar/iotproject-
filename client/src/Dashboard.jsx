@@ -7,6 +7,10 @@ import Navbar from "./Navbar";
 import Footer from "./Footer";
 
 export default function Dashboard({ token }) {
+
+  const API = "https://iotproject-pauj.onrender.com";
+
+  
   const [form, setForm] = useState({ projectType: "", description: "" });
 
   const handleChange = (e) => {
