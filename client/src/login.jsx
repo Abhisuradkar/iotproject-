@@ -2,7 +2,9 @@ import React, { useState } from "react";
 import axios from "axios";
 
 export default function Login({ setToken }) {
-  // ✅ FIXED STATE (IMPORTANT)
+
+  // ✅ ADD THIS (your live backend)
+const API = import.meta.env.VITE_API_URL;
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -20,7 +22,7 @@ export default function Login({ setToken }) {
   const login = async () => {
     try {
       const res = await axios.post(
-        "http://localhost:5000/api/auth/login",
+        `${API}/api/auth/login`,   // ✅ UPDATED
         {
           email: form.email,
           password: form.password
@@ -29,6 +31,7 @@ export default function Login({ setToken }) {
 
       localStorage.setItem("token", res.data.token);
       setToken(res.data.token);
+
     } catch (err) {
       console.error(err.response?.data);
       alert(err.response?.data || "Login failed");
@@ -37,14 +40,15 @@ export default function Login({ setToken }) {
 
   const register = async () => {
     try {
-      console.log("FORM DATA:", form); // 🔥 DEBUG
+      console.log("FORM DATA:", form);
 
       await axios.post(
-        "http://localhost:5000/api/auth/register",
+        `${API}/api/auth/register`,   // ✅ UPDATED
         form
       );
 
       alert("Registered! Now login");
+
     } catch (err) {
       console.error(err.response?.data);
       alert(err.response?.data || "Register failed");

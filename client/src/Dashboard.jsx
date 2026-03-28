@@ -15,7 +15,7 @@ export default function Dashboard({ token }) {
 
   const submit = async () => {
     await axios.post(
-      "http://localhost:5000/api/orders",
+      `${API}/api/orders`,
       form,
       { headers: { Authorization: token } }
     );
