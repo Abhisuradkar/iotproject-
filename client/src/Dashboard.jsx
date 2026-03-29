@@ -8,9 +8,7 @@ import Footer from "./Footer";
 
 export default function Dashboard({ token }) {
 
-  const API = "https://iotproject-pauj.onrender.com";
-
-  
+const API = import.meta.env.VITE_API_URL;  
   const [form, setForm] = useState({ projectType: "", description: "" });
 
   const handleChange = (e) => {
