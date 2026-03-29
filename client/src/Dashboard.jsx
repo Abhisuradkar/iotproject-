@@ -16,12 +16,17 @@ const API = import.meta.env.VITE_API_URL;
   };
 
   const submit = async () => {
-    await axios.post(
+  try {  
+    const res = await axios.post(
       `${API}/api/orders`,
       form,
       { headers: { Authorization: token } }
     );
     alert("Order submitted");
+  } catch (err) {
+    console.log("ERROR:", err);
+    alert(err.response?.data || err.message || "Order failed");
+  }
   };
 
   return (
