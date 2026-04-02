@@ -2,33 +2,10 @@ const router = require("express").Router();
 const Order = require("../models/Order");
 const User = require("../models/User");
 const auth = require("../middleware/auth");
-const nodemailer = require("nodemailer");
+const { Resend } = require("resend");
 
-// ✅ TRANSPORTER (Render-safe config)
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false,
-
-  family: 4, // 🔥 Force IPv4 (fixes Render ENETUNREACH)
-
-  auth: {
-    user: process.env.EMAIL,
-    pass: process.env.PASSWORD, // using PASSWORD (Option 2)
-  },
-
-  connectionTimeout: 10000,
-
-  tls: {
-    rejectUnauthorized: false,
-  },
-});
-
-// ✅ VERIFY SMTP ON START
-transporter.verify()
-  .then(() => console.log("✅ SMTP READY"))
-  .catch(err => console.log("❌ SMTP ERROR:", err));
-
+// ✅ INIT RESEND
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // 🚀 ROUTE: CREATE ORDER + SEND EMAIL
 router.post("/", auth, async (req, res) => {
@@ -59,21 +36,13 @@ router.post("/", auth, async (req, res) => {
 
     await order.save();
 
-    // 🔥 DEBUG ENV
-    console.log("ENV EMAIL:", process.env.EMAIL);
-    console.log("ENV PASSWORD:", process.env.PASSWORD ? "EXISTS" : "MISSING");
-
-    // ✅ SEND EMAIL
+    // 🔥 SEND EMAIL USING RESEND
     try {
-      console.log("STEP 1: Sending email...");
+      console.log("STEP 1: Sending email via Resend...");
 
-      const info = await transporter.sendMail({
-        from: process.env.EMAIL,
-
-        // 🔥 send to yourself + optional test email
-        to: `${process.env.EMAIL}`, 
-        // you can add: ,yourpersonal@gmail.com
-
+      const response = await resend.emails.send({
+        from: "onboarding@resend.dev", // default sender
+        to: process.env.EMAIL, // your email
         subject: "🔥 New Order Received",
         text: `
 📌 Project Type: ${projectType}
@@ -87,11 +56,11 @@ ${description}
         `,
       });
 
-      console.log("✅ STEP 2: Email sent successfully");
-      console.log("RESPONSE:", info.response);
+      console.log("✅ Email sent via Resend");
+      console.log("RESPONSE:", response);
 
     } catch (mailErr) {
-      console.error("❌ EMAIL ERROR FULL:", mailErr);
+      console.error("❌ EMAIL ERROR:", mailErr);
     }
 
     res.json("✅ Order submitted successfully");
