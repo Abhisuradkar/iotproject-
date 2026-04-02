@@ -10,64 +10,74 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 // 🚀 ROUTE: CREATE ORDER + SEND EMAIL
 router.post("/", auth, async (req, res) => {
   try {
-    console.log("USER:", req.user);
-    console.log("BODY:", req.body);
-
-    // ✅ Check user
+    // ✅ Validate user
     if (!req.user || !req.user.id) {
-      return res.status(401).json("Unauthorized");
+      return res.status(401).json({ error: "Unauthorized" });
     }
 
     const { projectType, description } = req.body;
 
+    // ✅ Validate input
+    if (!projectType || !description) {
+      return res.status(400).json({ error: "Missing fields" });
+    }
+
     // ✅ Fetch user
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user.id).lean();
 
     if (!user) {
-      return res.status(404).json("User not found");
+      return res.status(404).json({ error: "User not found" });
     }
 
     // ✅ Save order
-    const order = new Order({
+    const order = await Order.create({
       userId: user._id,
       projectType,
       description,
     });
 
-    await order.save();
+    // 🔥 SEND EMAIL (NON-BLOCKING)
+    (async () => {
+      try {
+        const response = await resend.emails.send({
+          from: "onboarding@resend.dev",
 
-    // 🔥 SEND EMAIL USING RESEND
-    try {
-      console.log("STEP 1: Sending email via Resend...");
+          // ✅ send order to YOU
+          to: process.env.EMAIL,
 
-      const response = await resend.emails.send({
-        from: "onboarding@resend.dev", // default sender
-        to: process.env.EMAIL, // your email
-        subject: "🔥 New Order Received",
-        text: `
+          subject: `🔥 New Order: ${projectType}`,
+
+          text: `
 📌 Project Type: ${projectType}
 
-👤 Name: ${user.name}
-📧 Email: ${user.email}
-📱 Phone: ${user.phone}
+👤 Name: ${user.name || "N/A"}
+📧 Email: ${user.email || "N/A"}
+📱 Phone: ${user.phone || "N/A"}
 
 📝 Description:
 ${description}
-        `,
-      });
+          `,
+        });
 
-      console.log("✅ Email sent via Resend");
-      console.log("RESPONSE:", response);
+        console.log("✅ Email sent:", response?.id);
+      } catch (mailErr) {
+        console.error("❌ EMAIL ERROR:", mailErr?.message);
+      }
+    })();
 
-    } catch (mailErr) {
-      console.error("❌ EMAIL ERROR:", mailErr);
-    }
-
-    res.json("✅ Order submitted successfully");
+    // ✅ Respond fast (don't wait for email)
+    return res.json({
+      success: true,
+      message: "Order submitted successfully",
+      orderId: order._id,
+    });
 
   } catch (err) {
     console.error("❌ ORDER ERROR:", err);
-    res.status(500).json(err.message);
+    return res.status(500).json({
+      error: "Server error",
+      details: err.message,
+    });
   }
 });
 
